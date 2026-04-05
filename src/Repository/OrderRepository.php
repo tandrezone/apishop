@@ -111,7 +111,8 @@ class OrderRepository
         $order->setId((int) $data['id']);
 
         if (isset($data['items'])) {
-            $order->setItems(json_decode($data['items'], true) ?? []);
+            $items = json_decode($data['items'], true);
+            $order->setItems(is_array($items) ? $items : []);
         }
 
         if (isset($data['updated_at'])) {

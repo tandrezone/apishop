@@ -26,19 +26,6 @@ if (file_exists(__DIR__ . '/../.env')) {
     $dotenv->load();
 }
 
-// Create Slim app
-$app = AppFactory::create();
-
-// Add error middleware
-$app->addErrorMiddleware(
-    (bool) ($_ENV['APP_DEBUG'] ?? true),
-    true,
-    true
-);
-
-// Add routing middleware
-$app->addRoutingMiddleware();
-
 // Dependency injection container setup
 $container = new \DI\Container();
 
@@ -105,7 +92,10 @@ $container->set(AuthorizationMiddleware::class, function () {
 AppFactory::setContainer($container);
 $app = AppFactory::create();
 
-// Re-add error middleware after setting container
+// Add routing middleware
+$app->addRoutingMiddleware();
+
+// Add error middleware
 $app->addErrorMiddleware(
     (bool) ($_ENV['APP_DEBUG'] ?? true),
     true,
