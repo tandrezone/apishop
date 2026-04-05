@@ -10,7 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
 
-class AuthController
+class AuthController extends BaseController
 {
     private UserService $userService;
     private JWTService $jwtService;
@@ -23,16 +23,20 @@ class AuthController
 
     public function login(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         if (!isset($data['email'], $data['password'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Missing required fields: email, password',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(400);
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Missing required fields: email, password'
+            );
         }
 
         $user = $this->userService->authenticate($data['email'], $data['password']);
@@ -63,16 +67,20 @@ class AuthController
 
     public function register(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         if (!isset($data['email'], $data['password'], $data['name'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Missing required fields: email, password, name',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(400);
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Missing required fields: email, password, name'
+            );
         }
 
         try {

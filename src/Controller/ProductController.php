@@ -9,7 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
 
-class ProductController
+class ProductController extends BaseController
 {
     private ProductService $productService;
 
@@ -53,16 +53,20 @@ class ProductController
 
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         if (!isset($data['name'], $data['description'], $data['price'], $data['stock'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Missing required fields: name, description, price, stock',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(400);
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Missing required fields: name, description, price, stock'
+            );
         }
 
         try {
@@ -89,7 +93,14 @@ class ProductController
         array $args
     ): ResponseInterface {
         $id = (int) $args['id'];
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         $product = $this->productService->updateProduct($id, $data);
 

@@ -9,7 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
 
-class UserController
+class UserController extends BaseController
 {
     private UserService $userService;
 
@@ -67,16 +67,20 @@ class UserController
 
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         if (!isset($data['email'], $data['password'], $data['name'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Missing required fields: email, password, name',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(400);
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Missing required fields: email, password, name'
+            );
         }
 
         try {
@@ -108,16 +112,21 @@ class UserController
 
         // Users can only update their own profile unless they're admin
         if ($currentUserRole !== 'admin' && $currentUserId !== $id) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Forbidden',
-                'message' => 'You can only update your own profile',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(403);
+            return $this->jsonErrorResponse(
+                'Forbidden',
+                'You can only update your own profile',
+                403
+            );
         }
 
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         $user = $this->userService->updateUser($id, $data);
 

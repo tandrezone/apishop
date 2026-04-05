@@ -112,7 +112,16 @@ class OrderRepository
 
         if (isset($data['items'])) {
             $items = json_decode($data['items'], true);
-            $order->setItems(is_array($items) ? $items : []);
+            if (!is_array($items)) {
+                // Log data integrity issue but continue with empty array
+                error_log(sprintf(
+                    'Failed to decode order items for order ID %d: %s',
+                    $data['id'],
+                    json_last_error_msg()
+                ));
+                $items = [];
+            }
+            $order->setItems($items);
         }
 
         if (isset($data['updated_at'])) {

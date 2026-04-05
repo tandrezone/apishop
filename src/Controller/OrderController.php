@@ -9,7 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response;
 
-class OrderController
+class OrderController extends BaseController
 {
     private OrderService $orderService;
 
@@ -76,7 +76,15 @@ class OrderController
 
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
+
         $currentUserId = $request->getAttribute('user_id');
         $currentUserRole = $request->getAttribute('user_role');
 
@@ -86,13 +94,10 @@ class OrderController
         }
 
         if (!isset($data['user_id'], $data['total_amount'])) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Missing required fields: user_id, total_amount',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(400);
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Missing required fields: user_id, total_amount'
+            );
         }
 
         try {
@@ -136,16 +141,21 @@ class OrderController
 
         // Users can only update their own orders unless they're admin
         if ($currentUserRole !== 'admin' && $order->getUserId() !== $currentUserId) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Forbidden',
-                'message' => 'You can only update your own orders',
-            ]));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(403);
+            return $this->jsonErrorResponse(
+                'Forbidden',
+                'You can only update your own orders',
+                403
+            );
         }
 
-        $data = json_decode((string) $request->getBody(), true);
+        $data = $this->parseJsonBody((string) $request->getBody());
+
+        if ($data === null) {
+            return $this->jsonErrorResponse(
+                'Bad Request',
+                'Invalid JSON in request body'
+            );
+        }
 
         $order = $this->orderService->updateOrder($id, $data);
 
